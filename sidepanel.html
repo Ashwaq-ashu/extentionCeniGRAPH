@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineGraph Companion</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <span class="logo">C</span>
+      <div>
+        <h1>CineGraph</h1>
+        <p>YOUR CINEMATIC UNIVERSE</p>
+      </div>
+    </div>
+    <span class="status">DEMO</span>
+  </header>
+
+  <main>
+    <section class="analyze-panel">
+      <div id="demo-mode-banner" class="demo-mode-banner" hidden>
+        <span class="banner-icon">🧪</span>
+        <span id="demo-mode-text">Running in dev-mock mode — scores are placeholders, not real predictions.</span>
+      </div>
+      <div class="section-heading">
+        <h3>Page analysis</h3>
+        <span class="tag">USER ACTION</span>
+      </div>
+      <p class="muted small analyze-copy">
+        Open a supported catalogue page, then analyze it. Only movie titles and years are collected — never passwords, cookies, or watch history.
+      </p>
+      <label class="consent-label">
+        <input type="checkbox" id="analysis-consent">
+        <span>I agree to analyze the active tab or titles I enter. CineGraph reads only title/year metadata I trigger — not credentials or watch history.</span>
+      </label>
+      <button type="button" id="analyze-page-btn" class="analyze-btn" disabled>
+        Analyze this page
+      </button>
+      <button type="button" id="recheck-page-btn" class="analyze-btn secondary" disabled hidden>
+        Recheck for new titles
+      </button>
+      <p id="analyze-status" class="analyze-status muted" role="status" aria-live="polite"></p>
+      <p id="payload-summary" class="payload-summary muted small" hidden></p>
+      <div id="analyze-results" class="analyze-results" hidden></div>
+      <div id="analyze-unresolved" class="analyze-unresolved" hidden></div>
+    </section>
+
+
+    <section class="manual-panel">
+      <div class="section-heading">
+        <h3>Look up a title</h3>
+        <span class="tag">NO PAGE ACCESS</span>
+      </div>
+      <p class="muted small">
+        Use this on sites without an adapter. You type the title — nothing is read from the page.
+      </p>
+      <form id="manual-title-form" class="manual-form">
+        <input type="text" id="manual-title" name="title" placeholder="Movie title" autocomplete="off" maxlength="200" required>
+        <input type="text" id="manual-year" name="year" placeholder="Year (optional)" inputmode="numeric" maxlength="4" pattern="[0-9]{0,4}">
+        <button type="submit" id="manual-score-btn" class="analyze-btn secondary" disabled>Score this title</button>
+      </form>
+      <div id="manual-results" class="analyze-results" hidden></div>
+    </section>
+
+    <section class="watch-panel">
+      <div class="section-heading">
+        <h3>👁️ Watch Screen</h3>
+        <span class="tag">EXTRACT TITLES</span>
+      </div>
+      <p class="muted small">
+        Detect movie titles from the current page text. Runs locally — no OCR required.
+      </p>
+      <button type="button" id="watch-screen-btn" class="analyze-btn" disabled>Watch This Page</button>
+      <p id="watch-screen-status" class="muted small" style="margin-top: 8px;"></p>
+      <div id="watch-screen-results" class="analyze-results" style="margin-top: 8px; max-height: 200px; overflow-y: auto; display: none;"></div>
+    </section>
+
+    <section class="welcome">
+      <p class="eyebrow">YOUR PROFILE</p>
+      <h2 id="user-name">Loading profile...</h2>
+      <p class="muted">Your taste. Your next obsession.</p>
+    </section>
+
+    <section class="section">
+      <h3>🎬 Favourite Movies</h3>
+      <div id="favorites" class="chips"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <h3>Taste DNA</h3>
+        <span class="tag">YOUR TASTE</span>
+      </div>
+      <div id="traits" class="traits"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <h3>Picked for You</h3>
+        <span class="muted small">MOCK RESULTS</span>
+      </div>
+      <div id="recommendations"></div>
+    </section>
+
+    <footer>
+      <p>Powered by CineGraph Taste Intelligence</p>
+      <p>Demo data · Not connected to the recommendation API</p>
+    </footer>
+  </main>
+
+  <script src="sidepanel.js"></script>
+  <script src="sidepanel-analysis.js"></script>
+</body>
+</html>

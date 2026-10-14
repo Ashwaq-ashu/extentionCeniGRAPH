@@ -1,0 +1,184 @@
+CINEGRAPH COMPANION — AGENT HANDOFF / PROJECT CONTEXT
+Last updated: 2026-10-13
+
+PURPOSE
+=======
+Continue development of CineGraph Companion, a Chrome extension for a general audience. It should help users discover movies that match their cinematic taste while they browse supported streaming/catalogue sites. The extension detects or receives movie metadata, sends normalized title data to a CineGraph scoring service, and displays match bands and explanations in the extension UI (and, where explicitly permitted, as inline page badges).
+
+The extension-side work assigned to this developer includes:
+- Chrome extension side panel
+- One site adapter, initially tested against a local demo catalogue
+- Match badges / displaying scoring results
+- Backend integration once the team's scoring endpoint is ready
+- Extension QA and debugging
+
+IMPORTANT PRODUCT DIRECTION
+===========================
+The user wants this to work for general users, across multiple streaming sites, rather than being hardcoded to a single local URL. They want a reusable architecture, not a hardcoded collection of movie-title-to-score mappings.
+
+Use this as the desired direction, but do NOT promise automatic compatibility with every streaming site. Each site has its own DOM and terms/access rules. Build a shared adapter interface and enable integrations only where the site permits the proposed access. Use explicit user-initiated analysis and narrowly scoped permissions by default. Never collect login credentials, cookies, full page HTML, or viewing/playback history by default. Do not build a silent or large-scale catalogue scraper.
+
+LEGAL / PERMISSION CONSTRAINT
+=============================
+During the previous development conversation, official IMDb terms/help and Hotstar terms were identified as restricting automated extraction/scraping without permission. Before implementing any streaming-site-specific extraction or DOM injection, verify the applicable current terms and permitted access method. Do not add a broad all-sites content script simply to bypass per-site restrictions. Prefer official/authorized APIs, licensed metadata, or user-entered title lookup when page extraction is not permitted.
+
+WHAT EXISTS / WHAT WAS BUILT
+============================
+1. Chrome extension folder: `cinegraph-extension/`
+   Files created during the session:
+   - manifest.json
+   - background.js
+   - sidepanel.html
+   - sidepanel.css
+   - sidepanel.js
+   - mock-data.json
+   - content.js
+   - mock-scoring.js (added later)
+
+2. Side panel:
+   - The extension's side panel was working earlier and displayed a sample profile, favourite movies, Taste DNA traits, and recommendation cards.
+   - Cards supported expanding an explanation and buttons such as Interested / Not for me.
+   - Feedback persistence using chrome.storage.local was added in earlier iterations.
+   - Preserve the existing working side-panel UI and behaviour where possible; do not rewrite it unnecessarily.
+
+3. Local demo movie catalogue:
+   - ZIP created previously: `/mnt/data/cinegraph_movie_catalogue_demo.zip`
+   - Extracted folder: `cinegraph_movie_catalogue_demo/`
+   - Files: `index.html`, `styles.css`
+   - It is an original dark movie-catalogue demo, not a copy of IMDb or a streaming service.
+   - Live Server was used. The URL eventually shown in the browser was `http://127.0.0.1:5500/index.html` (it had earlier also been served at a nested path).
+   - The demo includes around nine movie cards and metadata attributes used by our initial adapter:
+     `[data-movie-card]`, `[data-movie-title]`, `[data-movie-year]`, and optionally `[data-cinegraph-slot]`.
+   - The demo page logged `Demo catalogue ready: 9 movie cards`.
+
+4. Initial DOM detector:
+   - `content.js` initially queried `[data-movie-card]`, then title and year selectors.
+   - It successfully logged `🎬 CineGraph: Movie detection started!`, individual detected movie titles, and `✅ CineGraph detected movies: Array(9)` on the local demo page.
+   - This confirmed detection against our own demo's explicit markup. It did NOT confirm compatibility with IMDb, Hotstar, or other streaming sites.
+
+5. Inline mock badges:
+   - The detector was then changed to insert a styled `div.cinegraph-match-badge` after each title.
+   - Badges appeared beside the local demo movie titles.
+   - The badges were injected into the live page DOM, not written back into the source HTML file. Refreshing reruns the content script and recreates them.
+
+6. Mock scoring service:
+   - `mock-scoring.js` defines `globalThis.CineGraphMockScoring` and an async `score(payload)` method.
+   - The mock returns a proposed API-like structure `{ results, unresolved }`.
+   - It contains sample hardcoded fixtures for titles such as Interstellar, Inception, Shutter Island, The Prestige, Memento, Arrival, Blade Runner 2049, The Truman Show, and Eternal Sunshine of the Spotless Mind.
+   - `content.js` calls this service with a payload shaped like:
+     {
+       profile_token: "demo-profile-token",
+       region: "IN",
+       titles: [{ raw_title: "Interstellar", year: "2014" }, ...]
+     }
+   - It then renders the returned `band` for a matching title. Console output showed `Mock scoring response`, `results: Array(9)`, `unresolved: Array(0)`, and `CineGraph mock scoring integration complete!` on the local demo.
+   - These are mock fixtures, NOT model predictions. `demo-profile-token` is a placeholder and must never be sent to a real service.
+   - The user says they are finished with hardcoding. The next implementation should isolate and eventually remove these fixtures in favour of the real scoring endpoint or an explicit temporary mock mode. Do not represent the fixtures as genuine recommendations.
+
+CURRENT STATE / KNOWN BLOCKER
+=============================
+A recent change was made to support user-triggered analysis across permitted pages. After that change, the user reported that the extension displayed an error or the side panel would not open. They have NOT yet sent the exact Chrome error. Do not assume the cause without checking it.
+
+Most recent manifest proposed in the conversation:
+{
+  "manifest_version": 3,
+  "name": "CineGraph Companion",
+  "version": "0.2.0",
+  "description": "Discover movies that match your cinematic taste.",
+  "permissions": ["sidePanel", "storage", "activeTab", "scripting"],
+  "side_panel": { "default_path": "sidepanel.html" },
+  "action": { "default_title": "Analyze this page with CineGraph" },
+  "background": { "service_worker": "background.js" }
+}
+
+Most recent `background.js` proposed:
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+chrome.action.onClicked.addListener(async (tab) => {
+  if (!tab.id || !tab.url) return;
+  const allowedProtocols = ["http:", "https:"];
+  let pageUrl;
+  try { pageUrl = new URL(tab.url); } catch { return; }
+  if (!allowedProtocols.includes(pageUrl.protocol)) {
+    console.warn("CineGraph: This page cannot be analyzed.");
+    return;
+  }
+  console.log("CineGraph: User requested analysis of", pageUrl.origin);
+});
+
+This handler only logs the user's request; it does not yet inject any script. It may also conflict with the expectation that clicking the action should open the side panel. Diagnose before changing it again. Ask for/check the actual error under `chrome://extensions` -> CineGraph Companion -> Errors, or inspect the service worker console. Restore side panel operation first.
+
+PROPOSED BACKEND CONTRACT (TEAM MUST CONFIRM)
+=============================================
+Proposed POST endpoint: `/v1/extension/score`
+Request:
+{
+  "profile_token": "...",
+  "region": "IN",
+  "titles": [
+    { "raw_title": "Interstellar", "year": 2014 }
+  ]
+}
+
+Proposed response:
+{
+  "results": [
+    {
+      "raw_title": "Interstellar",
+      "catalogue_id": null,
+      "band": "Strong Match",
+      "top_traits": ["Emotional intensity", "World-building"],
+      "reason": "...",
+      "confidence": 0.91
+    }
+  ],
+  "unresolved": []
+}
+
+IMPORTANT: This is an agreed/proposed shape from the project discussion, NOT a confirmed deployed API. Confirm with the backend teammate the exact URL, schema, authentication/profile-token semantics, CORS rules, errors/rate limits, and whether confidence is intended to be exposed to users. Use stable catalogue IDs when available. Avoid putting secrets in extension source code.
+
+DESIRED ARCHITECTURE
+====================
+Build toward a structure similar to:
+- manifest.json: MV3 permissions and side panel
+- background.js: service worker, side-panel behaviour, user-initiated request coordination
+- sidepanel.html / sidepanel.css / sidepanel.js: UI and an explicit “Analyze this page” action (or manual-title fallback)
+- content.js: thin page integration layer; collects only supported metadata and renders results where allowed
+- adapters/: one adapter per permitted site, each returning the same normalized shape
+- scoring-client.js: shared API client / response validation; replace mock scoring without rewriting DOM logic
+- optional development-only mock service/fixtures, clearly labelled as fake data
+
+Normalized metadata target:
+{ raw_title: string, year?: number | null, source?: string }
+
+For each adapter:
+- Match only that site's page/URL patterns.
+- Avoid extracting unrelated page text or sending entire HTML.
+- Handle dynamic content with bounded work and avoid duplicate badges if a page updates.
+- Handle no result / unresolved titles cleanly.
+- Include clear user action and permission context before analysis.
+- Do not access playback progress, watch history, account data, cookies, or credentials.
+
+NEXT TASKS (ORDER MATTERS)
+==========================
+1. Recover the extension: obtain the exact error, fix the manifest/background script, and confirm side_panel.html opens again.
+2. Inspect the current files before replacing them. Preserve sidepanel.js, sidepanel.css, mock-data.json, and existing feedback storage unless necessary.
+3. Implement a clear “Analyze this page” button inside the side panel, rather than relying on one click handler to both open the panel and analyse the page.
+4. Define how the panel triggers a request for the active tab. Use a suitable MV3 messaging design and `activeTab` + `scripting` if appropriate; inject only after explicit user action and only on eligible/authorized pages.
+5. Keep the local demo catalogue as the regression test. Confirm it still detects nine demo cards and badges.
+6. Replace tightly coupled hardcoded fixtures with an isolated mock client behind a well-defined interface, then plug in the real scoring endpoint after the team provides confirmed details. User explicitly wants to move away from hardcoding.
+7. Add site adapters only for integrations allowed by the relevant site terms/access method. Don't assume selectors, visible titles, or permission to extract content.
+8. Add QA: extension load, side panel opens, explicit analysis button works, metadata payload is minimal, errors are shown to the user, no duplicate badges, unresolved titles handled, permissions can be revoked, and no sensitive data is sent.
+9. Document privacy and permissions for general users before any public release.
+
+USER CONTEXT / WORKING STYLE
+============================
+The user is a student developer working in VS Code on Windows and prefers clear, incremental guidance with exact file names and where to paste code. They like an informal/enthusiastic tone but want actionable steps rather than a huge unstructured explanation. Avoid asking them to overwrite many files before diagnosing the current blocker. Explain any uncertainty and ask for screenshots/error text when needed.
+
+SUCCESS CRITERIA
+================
+- Extension reloads without errors and side panel works.
+- Local demo page still provides a reliable regression test.
+- A deliberate user action begins metadata analysis on a supported page.
+- Site adapters are modular and permissions are narrow.
+- The scoring client consumes a confirmed response contract from the real backend; mock fixtures are not presented as true predictions.
+- Privacy, site terms, and user consent are respected for a general-user extension.

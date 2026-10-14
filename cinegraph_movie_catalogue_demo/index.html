@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Catalogue — CineGraph Adapter Test</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">M</span><strong>Movie Catalogue</strong></div>
+    <nav><a href="#featured">Featured</a><a href="#popular">Popular</a><a href="#recommended">For You</a></nav>
+    <div class="search">⌕ <span>Search movies</span></div>
+  </header>
+
+  <main>
+    <section class="hero" id="featured">
+      <div class="hero-copy">
+        <p class="eyebrow">FEATURED TONIGHT</p>
+        <h1>Find your next<br><span>great story.</span></h1>
+        <p class="intro">A local demo catalogue for testing CineGraph Companion's movie-title detection. This is not IMDb and uses demo content only.</p>
+        <a class="primary-link" href="#popular">Explore movies <span>→</span></a>
+      </div>
+      <div class="hero-poster poster-dune" aria-label="Decorative science-fiction poster illustration">
+        <span class="poster-kicker">A JOURNEY BEYOND</span><strong>DUNE</strong><small>PART TWO · 2024</small>
+      </div>
+    </section>
+
+    <section class="catalogue-section" id="popular">
+      <div class="section-heading"><div><p class="eyebrow">CURATED FOR MOVIE LOVERS</p><h2>Popular movies</h2></div><span class="section-note">DEMO CATALOGUE</span></div>
+      <div class="movie-grid">
+        <article class="movie-card" data-movie-card data-title="Interstellar" data-year="2014">
+          <div class="poster poster-interstellar"><span>THE END OF EARTH<br>WILL NOT BE THE END OF US</span><b>INTERSTELLAR</b></div>
+          <div class="movie-info"><div class="title-line"><h3 data-movie-title>Interstellar</h3><span class="year" data-movie-year>2014</span></div><p class="genres">Sci-Fi · Adventure · Drama</p><div class="meta"><span class="rating">★ 8.7</span><span class="runtime">169 min</span></div><p class="synopsis">A team travels beyond this galaxy to discover whether mankind has a future among the stars.</p><div class="cg-slot" data-cinegraph-slot></div></div>
+        </article>
+        <article class="movie-card" data-movie-card data-title="Inception" data-year="2010">
+          <div class="poster poster-inception"><span>YOUR MIND IS THE SCENE OF THE CRIME</span><b>INCEPTION</b></div>
+          <div class="movie-info"><div class="title-line"><h3 data-movie-title>Inception</h3><span class="year" data-movie-year>2010</span></div><p class="genres">Sci-Fi · Action · Thriller</p><div class="meta"><span class="rating">★ 8.8</span><span class="runtime">148 min</span></div><p class="synopsis">A specialist enters dreams to plant an idea that could change everything.</p><div class="cg-slot" data-cinegraph-slot></div></div>
+        </article>
+        <article class="movie-card" data-movie-card data-title="Shutter Island" data-year="2010">
+          <div class="poster poster-shutter"><span>SOME PLACES NEVER LET YOU GO</span><b>SHUTTER<br>ISLAND</b></div>
+          <div class="movie-info"><div class="title-line"><h3 data-movie-title>Shutter Island</h3><span class="year" data-movie-year>2010</span></div><p class="genres">Mystery · Thriller · Drama</p><div class="meta"><span class="rating">★ 8.2</span><span class="runtime">138 min</span></div><p class="synopsis">A US marshal investigates the disappearance of a patient from a remote institution.</p><div class="cg-slot" data-cinegraph-slot></div></div>
+        </article>
+        <article class="movie-card" data-movie-card data-title="The Prestige" data-year="2006">
+          <div class="poster poster-prestige"><span>ARE YOU WATCHING CLOSELY?</span><b>THE PRESTIGE</b></div>
+          <div class="movie-info"><div class="title-line"><h3 data-movie-title>The Prestige</h3><span class="year" data-movie-year>2006</span></div><p class="genres">Drama · Mystery · Thriller</p><div class="meta"><span class="rating">★ 8.5</span><span class="runtime">130 min</span></div><p class="synopsis">Two rival magicians become consumed by the pursuit of the ultimate illusion.</p><div class="cg-slot" data-cinegraph-slot></div></div>
+        </article>
+        <article class="movie-card" data-movie-card data-title="Memento" data-year="2000">
+          <div class="poster poster-memento"><span>REMEMBER SAMMY JANKIS</span><b>MEMENTO</b></div>
+          <div class="movie-info"><div class="title-line"><h3 data-movie-title>Memento</h3><span class="year" data-movie-year>2000</span></div><p class="genres">Mystery · Thriller</p><div class="meta"><span class="rating">★ 8.4</span><span class="runtime">113 min</span></div><p class="synopsis">A man with short-term memory loss searches for the person who changed his life.</p><div class="cg-slot" data-cinegraph-slot></div></div>
+        </article>
+        <article class="movie-card" data-movie-card data-title="Arrival" data-year="2016">
+          <div class="poster poster-arrival"><span>WHY ARE THEY HERE?</span><b>ARRIVAL</b></div>
+          <div class="movie-info"><div class="title-line"><h3 data-movie-title>Arrival</h3><span class="year" data-movie-year>2016</span></div><p class="genres">Sci-Fi · Drama · Mystery</p><div class="meta"><span class="rating">★ 7.9</span><span class="runtime">116 min</span></div><p class="synopsis">A linguist tries to communicate with visitors whose arrival changes humanity's future.</p><div class="cg-slot" data-cinegraph-slot></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="catalogue-section" id="recommended">
+      <div class="section-heading"><div><p class="eyebrow">DISCOVER SOMETHING NEW</p><h2>More to explore</h2></div></div>
+      <div class="text-list">
+        <article data-movie-card data-title="Blade Runner 2049" data-year="2017"><div><h3 data-movie-title>Blade Runner 2049</h3><span class="year" data-movie-year>2017</span><p>Science fiction · Mystery</p></div><span class="rating">★ 8.0</span><div class="cg-slot" data-cinegraph-slot></div></article>
+        <article data-movie-card data-title="The Truman Show" data-year="1998"><div><h3 data-movie-title>The Truman Show</h3><span class="year" data-movie-year>1998</span><p>Comedy · Drama · Sci-Fi</p></div><span class="rating">★ 8.2</span><div class="cg-slot" data-cinegraph-slot></div></article>
+        <article data-movie-card data-title="Eternal Sunshine of the Spotless Mind" data-year="2004"><div><h3 data-movie-title>Eternal Sunshine of the Spotless Mind</h3><span class="year" data-movie-year>2004</span><p>Romance · Sci-Fi · Drama</p></div><span class="rating">★ 8.3</span><div class="cg-slot" data-cinegraph-slot></div></article>
+      </div>
+    </section>
+    <footer>Local demo page · Fictional catalogue interface · Created to test CineGraph Companion selectors</footer>
+  </main>
+  <script>
+    const demoCards = document.querySelectorAll("[data-movie-card]");
+    console.info(`Demo catalogue ready: ${demoCards.length} movie cards`);
+  </script>
+</body>
+</html>

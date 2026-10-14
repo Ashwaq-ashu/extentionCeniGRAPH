@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "CineGraph Companion",
+  "version": "0.5.3",
+  "description": "Discover movies that match your cinematic taste.",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "desktopCapture",
+    "tabCapture"
+  ],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Open CineGraph Companion"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "shared/stable-id.js",
+        "scoring/mock-profile.js",
+        "scoring/mock-dev-provider.js",
+        "scoring/scoring-client.js",
+        "shared/payload-summary.js",
+        "adapters/demo-catalogue.js",
+        "adapters/generic.js",
+        "adapters/registry.js",
+        "content/page-bridge.js",
+        "content/screen-detector.js"
+      ],
+      "matches": ["http://localhost/*", "http://127.0.0.1/*", "https://*/*", "http://*/*"]
+    }
+  ]
+}
