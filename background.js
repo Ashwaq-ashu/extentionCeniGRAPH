@@ -19,10 +19,12 @@
 try {
   importScripts(
     "shared/stable-id.js",
-    "scoring/mock-profile.js",
-    "scoring/mock-dev-provider.js",
+    "shared/letterboxd-data.js",
+    "shared/letterboxd-profile.js",
+    "scoring/letterboxd-provider.js",
     "scoring/scoring-client.js",
-    "shared/payload-summary.js"
+    "shared/payload-summary.js",
+    "shared/tmdb-client.js"
   );} catch (err) {
   console.error("CineGraph: Failed to import shared scripts:", err);
 }
@@ -32,8 +34,9 @@ try {
 // ---------------------------------------------------------------------------
 const INJECTED_FILES = [
   "shared/stable-id.js",
-  "scoring/mock-profile.js",
-  "scoring/mock-dev-provider.js",
+  "shared/letterboxd-data.js",
+  "shared/letterboxd-profile.js",
+  "scoring/letterboxd-provider.js",
   "scoring/scoring-client.js",
   "shared/payload-summary.js",
   "adapters/demo-catalogue.js",
@@ -60,7 +63,7 @@ async function getScoringSettings() {
   const stored = await chrome.storage.local.get("scoringSettings");
   const s = stored.scoringSettings || {};
   return {
-    mode: s.mode || "dev-mock",
+    mode: s.mode || "local",
     baseUrl: s.baseUrl || null,
     profileToken: s.profileToken || null,
     region: s.region || "IN",
@@ -199,7 +202,7 @@ function cacheContext() {
   const c = globalThis.CineGraphScoringConfig || {};
   return {
     profileToken: c.profileToken || null,
-    mode: c.mode || "dev-mock",
+    mode: c.mode || "local",
     region: c.region || "IN",
   };
 }
@@ -299,6 +302,19 @@ async function scoreTitlesInWorker(titles, source) {
   const response = await client.score(payload);
   const demoMode = client.isDemoMode();
 
+  // TMDB metadata enrichment (best-effort, never blocks scoring).
+  let enrichedResults = response.results || [];
+  try {
+    if (globalThis.CineGraphTmdb && await globalThis.CineGraphTmdb.isConfigured()) {
+      enrichedResults = await globalThis.CineGraphTmdb.enrichResults(enrichedResults);
+    } else {
+      enrichedResults = enrichedResults.map((r) => ({ ...r, tmdb: r.tmdb || null }));
+    }
+  } catch (err) {
+    console.warn("CineGraph: TMDB enrichment failed (manual):", err?.message || err);
+    enrichedResults = (response.results || []).map((r) => ({ ...r, tmdb: r.tmdb || null }));
+  }
+
   const payloadSummary = globalThis.CineGraphPayloadSummary
     ? globalThis.CineGraphPayloadSummary.fromTitles(
         payload.titles,
@@ -319,12 +335,13 @@ async function scoreTitlesInWorker(titles, source) {
     demoMode,
     source: source || "manual-entry",
     titles: payload.titles,
-    results: response.results,
+    results: enrichedResults,
     unresolved: response.unresolved,
+    tmdbEnriched: Boolean(enrichedResults.some((r) => r.tmdb)),
     payloadSummary,
     message: demoMode
-      ? "Demo placeholders — not real taste predictions."
-      : "Lookup complete.",
+      ? "Legacy mock mode — switch scoringSettings.mode to \"local\"."
+      : "Lookup complete — scored against your Letterboxd library.",
   };
 }
 
@@ -455,6 +472,20 @@ async function runAnalysisOnTab(tab, { recheck = false } = {}) {
       };
     });
 
+    // TMDB metadata enrichment (best-effort — scoring still works without it).
+    let tmdbEnriched = false;
+    try {
+      if (globalThis.CineGraphTmdb && await globalThis.CineGraphTmdb.isConfigured()) {
+        mergedResults = await globalThis.CineGraphTmdb.enrichResults(mergedResults);
+        tmdbEnriched = mergedResults.some((r) => r.tmdb);
+      } else {
+        mergedResults = mergedResults.map((r) => ({ ...r, tmdb: r.tmdb || null }));
+      }
+    } catch (err) {
+      console.warn("CineGraph: TMDB enrichment failed (page):", err?.message || err);
+      mergedResults = mergedResults.map((r) => ({ ...r, tmdb: r.tmdb || null }));
+    }
+
     const demoMode = globalThis.CineGraphScoringClient.isDemoMode();
     const payloadSummary = globalThis.CineGraphPayloadSummary
       ? globalThis.CineGraphPayloadSummary.fromTitles(diff.fresh, cacheContext().region, demoMode)
@@ -477,6 +508,7 @@ async function runAnalysisOnTab(tab, { recheck = false } = {}) {
       titles: diff.fresh,
       results: mergedResults,
       unresolved,
+      tmdbEnriched,
       domVersion: detection.domVersion ?? null,
       scannedAt: detection.scannedAt ?? Date.now(),
       found,
@@ -580,12 +612,142 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "CINEGRAPH_GET_SCORING_MODE") {
     (async () => {
       const settings = await getScoringSettings();
+      let tmdbConfigured = false;
+      try {
+        tmdbConfigured = globalThis.CineGraphTmdb
+          ? await globalThis.CineGraphTmdb.isConfigured()
+          : false;
+      } catch { tmdbConfigured = false; }
       sendResponse({
         mode: settings.mode,
-        demoMode: settings.mode !== "api",
+        demoMode: settings.mode === "dev-mock",
+        localMode: settings.mode === "local",
         region: settings.region,
         apiConfigured: Boolean(settings.baseUrl && settings.profileToken),
+        tmdbConfigured,
       });
+    })();
+    return true;
+  }
+
+  // ── TMDB: save / clear / status ──────────────────────────────────────────
+  if (message?.type === "CINEGRAPH_TMDB_SET_KEY") {
+    (async () => {
+      const key = String(message?.apiKey || "").trim();
+      if (!key) {
+        sendResponse({ ok: false, error: "empty_key", message: "Paste a TMDB API key first." });
+        return;
+      }
+      await chrome.storage.local.set({
+        tmdbSettings: { apiKey: key, updatedAt: Date.now() },
+      });
+      // Validate with a cheap call before claiming success.
+      try {
+        await globalThis.CineGraphTmdb.getTrending(1);
+        sendResponse({ ok: true, configured: true, message: "TMDB connected." });
+      } catch (err) {
+        // Keep the key (user may be offline) but surface the validation error.
+        sendResponse({ ok: false, error: "validation_failed", message: err?.message || "Key saved, but TMDB validation failed." });
+      }
+    })();
+    return true;
+  }
+
+  if (message?.type === "CINEGRAPH_TMDB_CLEAR_KEY") {
+    (async () => {
+      await chrome.storage.local.remove(["tmdbSettings", "tmdbCache"]);
+      sendResponse({ ok: true, configured: false });
+    })();
+    return true;
+  }
+
+  if (message?.type === "CINEGRAPH_TMDB_GET_STATUS") {
+    (async () => {
+      const configured = globalThis.CineGraphTmdb
+        ? await globalThis.CineGraphTmdb.isConfigured()
+        : false;
+      sendResponse({ ok: true, configured });
+    })();
+    return true;
+  }
+
+  // ── Real profile (Letterboxd library, bundled) ─────────────────────────
+  if (message?.type === "CINEGRAPH_GET_PROFILE") {
+    (async () => {
+      const profile = globalThis.CineGraphLetterboxdProfile?.profile
+        ? globalThis.CineGraphLetterboxdProfile.profile()
+        : null;
+      if (!profile) {
+        sendResponse({ ok: false, error: "profile_unavailable", message: "Letterboxd library failed to load." });
+        return;
+      }
+      sendResponse({ ok: true, profile });
+    })();
+    return true;
+  }
+
+  // ── Recommendations: user's own watchlist, ranked by Letterboxd affinity ──
+  // No mock data: candidates come from the bundled watchlist, bands/reasons
+  // from the user's real ratings, posters/overviews from TMDB when configured.
+  if (message?.type === "CINEGRAPH_GET_RECOMMENDATIONS") {
+    (async () => {
+      try {
+        const profiler = globalThis.CineGraphLetterboxdProfile;
+        if (!profiler?.rankWatchlist) {
+          sendResponse({ ok: false, error: "profile_unavailable", message: "Letterboxd library failed to load.", results: [] });
+          return;
+        }
+        const count = Math.min(Number(message?.count) || 8, 12);
+        const ranked = profiler.rankWatchlist(count);
+        const shaped = ranked.map((w) => ({
+          raw_title: w.title,
+          year: w.year,
+          band: w.band,
+          reason: w.reason,
+          confidence: w.score,
+          is_demo: false,
+          tmdb: null,
+        }));
+        // TMDB enrichment is best-effort: without a key the ranked watchlist
+        // still renders with real local reasons.
+        try {
+          if (globalThis.CineGraphTmdb && await globalThis.CineGraphTmdb.isConfigured()) {
+            const enriched = await globalThis.CineGraphTmdb.enrichResults(shaped);
+            sendResponse({ ok: true, results: enriched, tmdbEnriched: true });
+            return;
+          }
+        } catch (err) {
+          console.warn("CineGraph: TMDB enrichment failed (recommendations):", err?.message || err);
+        }
+        sendResponse({ ok: true, results: shaped, tmdbEnriched: false });
+      } catch (err) {
+        sendResponse({ ok: false, error: "recs_failed", message: err?.message || "Recommendations failed.", results: [] });
+      }
+    })();
+    return true;
+  }
+
+  // ── TMDB: single-title search / details ──────────────────────────────────
+  if (message?.type === "CINEGRAPH_TMDB_SEARCH") {
+    (async () => {
+      try {
+        const meta = await globalThis.CineGraphTmdb.searchTitle(message?.title || "", message?.year ?? null);
+        sendResponse({ ok: true, meta });
+      } catch (err) {
+        sendResponse({ ok: false, error: "tmdb_search_failed", message: err?.message || "Search failed." });
+      }
+    })();
+    return true;
+  }
+
+  if (message?.type === "CINEGRAPH_TMDB_DETAILS") {
+    (async () => {
+      try {
+        const meta = await globalThis.CineGraphTmdb.getDetails(message?.tmdbId);
+        sendResponse({ ok: true, meta });
+      } catch (err) {
+        sendResponse({ ok: false, error: "tmdb_details_failed", message: err?.message || "Details failed." });
+      }
     })();
     return true;
   }

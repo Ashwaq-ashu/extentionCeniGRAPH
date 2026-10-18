@@ -419,7 +419,7 @@ async function analyzeCurrentPage() {
       domVersion: detection.domVersion,
       payloadSummary,
       message: demoMode
-        ? `Demo placeholders for ${enriched.length} title(s) — not real predictions.`
+        ? `Local-library scores for ${enriched.length} title(s).`
         : "Analysis complete.",
     };
   } catch (error) {

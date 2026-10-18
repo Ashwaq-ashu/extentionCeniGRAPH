@@ -11,7 +11,8 @@ Run after every meaningful change. Requires Chrome + unpacked extension load.
 ## Side panel UI
 
 - [ ] Toolbar icon opens side panel.
-- [ ] Profile, Taste DNA, and **MOCK RESULTS** recommendations render from `mock-data.json`.
+- [ ] Profile shows your Letterboxd name, favourites, library stats, rewatches, cold spots.
+- [ ] **Picked for You** ranks your Letterboxd watchlist (no mock data).
 - [ ] Feedback buttons persist after reload (`chrome.storage.local`).
 
 ## Consent & permissions
@@ -25,7 +26,7 @@ Run after every meaningful change. Requires Chrome + unpacked extension load.
 - [ ] Serve `cinegraph_movie_catalogue_demo/index.html` (Live Server on `127.0.0.1` or `localhost`).
 - [ ] Console: `Demo catalogue ready: 9 movie cards`.
 - [ ] With demo tab active, consent checked, click **Analyze this page**.
-- [ ] Side panel lists 9 scored rows labeled **Demo ·** when in dev-mock mode.
+- [ ] Side panel lists 9 scored rows with plain bands (Letterboxd-local mode, no Demo prefix).
 - [ ] Payload summary shows title count, region, and field names (no token).
 - [ ] Inline badges appear once per card; second analyze updates text without duplicate badges.
 
@@ -38,7 +39,7 @@ Run after every meaningful change. Requires Chrome + unpacked extension load.
 ## Manual title lookup
 
 - [ ] On any tab, enter a title + optional year → **Score this title**.
-- [ ] Result appears in manual section with **Demo ·** band in dev-mock mode.
+- [ ] Result appears in manual section with a Letterboxd-grounded reason.
 - [ ] No content script injection required for manual lookup.
 
 ## Unresolved titles (API / edge cases)

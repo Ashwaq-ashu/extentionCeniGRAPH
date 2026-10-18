@@ -536,3 +536,98 @@ footer p {
   cursor: not-allowed;
 }
 
+/* ── TMDB settings + metadata cards ─────────────────────────────────── */
+.tmdb-panel {
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #14141a;
+}
+
+.tmdb-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tmdb-actions .analyze-btn {
+  flex: 1;
+}
+
+#tmdb-status-text {
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.tmdb-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.tmdb-poster {
+  width: 64px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  flex: none;
+  background: #0f0f14;
+}
+
+.tmdb-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.tmdb-bits {
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.tmdb-overview {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tmdb-why {
+  margin-top: 6px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.chip.cold {
+  border-color: #3b304b;
+  color: #b8b5c5;
+}
+
+.match.weak {
+  color: #c4a7ff;
+  background: #292039;
+}
+
+/* TMDB rows inside page-analysis + manual lookup */
+.row-tmdb {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.row-poster {
+  width: 44px;
+  height: 66px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex: none;
+  background: #0f0f14;
+}
+
+.row-tmdb-info {
+  min-width: 0;
+  flex: 1;
+}
+

@@ -22,8 +22,8 @@ function formatPayloadSummary(summary) {
   }
 
   const networkLine = summary.demoMode
-    ? "Stays on device (dev-mock mode)."
-    : "Will send a minimal JSON request to your configured scoring API.";
+    ? "Legacy mock mode — switch scoringSettings.mode to \"local\"."
+    : "Stays on device (local Letterboxd profile).";
 
   return `${summary.titleCount} title(s) · region ${summary.region} · fields: ${summary.dataFields.join(", ")}. ${networkLine}`;
 }
@@ -73,12 +73,13 @@ function renderScoreRows(container, analysis) {
     group.items.forEach((result) => {
       rank += 1;
       const meta = titleMeta.get(result.raw_title) || {};
-      const year = result.year ?? meta.year;
+      const year = result.year ?? meta.year ?? result.tmdb?.year ?? null;
       const pageMeta = result.pageMeta || meta.pageMeta;
       const source = result.source || meta.source;
+      const tmdb = result.tmdb || null;
 
       const row = document.createElement("div");
-      row.className = "analyze-result-row";
+      row.className = "analyze-result-row" + (tmdb ? " has-tmdb" : "");
       row.tabIndex = 0;
       row.title = [
         year ? `${result.raw_title} (${year})` : result.raw_title,
@@ -105,6 +106,40 @@ function renderScoreRows(container, analysis) {
       band.textContent = demo || result.is_demo ? `Demo · ${result.band}` : result.band;
       top.append(left, band);
       row.appendChild(top);
+
+      // TMDB metadata block (poster + rating + overview) when enriched.
+      if (tmdb && (tmdb.poster || tmdb.overview || tmdb.rating != null)) {
+        const tm = document.createElement("div");
+        tm.className = "row-tmdb";
+        if (tmdb.poster) {
+          const img = document.createElement("img");
+          img.className = "row-poster";
+          img.src = tmdb.poster_small || tmdb.poster;
+          img.alt = "";
+          img.loading = "lazy";
+          img.addEventListener("error", () => img.remove());
+          tm.appendChild(img);
+        }
+        const tinfo = document.createElement("div");
+        tinfo.className = "row-tmdb-info";
+        const bits = [];
+        if (tmdb.rating != null) bits.push(`★ ${tmdb.rating}/10`);
+        if (Array.isArray(tmdb.genres) && tmdb.genres.length) bits.push(tmdb.genres.slice(0, 3).join(" · "));
+        if (bits.length) {
+          const b = document.createElement("div");
+          b.className = "row-meta muted small";
+          b.textContent = bits.join("  •  ");
+          tinfo.appendChild(b);
+        }
+        if (tmdb.overview) {
+          const o = document.createElement("div");
+          o.className = "row-reason tmdb-overview";
+          o.textContent = tmdb.overview.length > 200 ? tmdb.overview.slice(0, 200) + "…" : tmdb.overview;
+          tinfo.appendChild(o);
+        }
+        tm.appendChild(tinfo);
+        row.appendChild(tm);
+      }
 
       const contextBits = [pageMeta?.section, pageMeta?.tag, source].filter(Boolean);
       if (contextBits.length) {
@@ -169,7 +204,14 @@ async function setupScoringModeBanner() {
 
     if (modeInfo?.demoMode) {
       bannerText.textContent =
-        "Dev-mock mode — scores are placeholders, not real taste predictions.";
+        "Legacy mock mode — set scoringSettings.mode to \"local\" to score against your Letterboxd library.";
+      banner.hidden = false;
+    } else if (modeInfo?.localMode) {
+      banner.style.background = "#0e2718";
+      banner.style.borderColor = "#2d6b47";
+      banner.style.color = "#9de6bc";
+      banner.querySelector(".banner-icon").textContent = "📚";
+      bannerText.textContent = "Scored against your Letterboxd library — on-device, no placeholders.";
       banner.hidden = false;
     } else {
       // API mode: show a subtle connected indicator instead of the warning.
@@ -180,6 +222,16 @@ async function setupScoringModeBanner() {
       bannerText.textContent = "Connected to scoring API.";
       banner.hidden = false;
     }
+
+    // Append TMDB state so users can tell seeded vs real metadata apart.
+    try {
+      const tmdbRes = await chrome.runtime.sendMessage({ type: "CINEGRAPH_TMDB_GET_STATUS" });
+      if (tmdbRes?.configured) {
+        bannerText.textContent += " TMDB metadata on.";
+      } else {
+        bannerText.textContent += " TMDB off — add a key below for real posters/ratings.";
+      }
+    } catch { /* ignore */ }
   } catch {
     // Service worker not ready yet — banner stays hidden.
   }
