@@ -16,14 +16,14 @@
         <p>YOUR CINEMATIC UNIVERSE</p>
       </div>
     </div>
-    <span class="status">DEMO</span>
+    <span class="status" id="tmdb-status">LOCAL</span>
   </header>
 
   <main>
     <section class="analyze-panel">
       <div id="demo-mode-banner" class="demo-mode-banner" hidden>
         <span class="banner-icon">🧪</span>
-        <span id="demo-mode-text">Running in dev-mock mode — scores are placeholders, not real predictions.</span>
+        <span id="demo-mode-text">Scores come from your Letterboxd library — computed on-device.</span>
       </div>
       <div class="section-heading">
         <h3>Page analysis</h3>
@@ -78,36 +78,66 @@
       <div id="watch-screen-results" class="analyze-results" style="margin-top: 8px; max-height: 200px; overflow-y: auto; display: none;"></div>
     </section>
 
+    <section class="tmdb-panel">
+      <div class="section-heading">
+        <h3>TMDB metadata</h3>
+        <span class="tag" id="tmdb-tag">NOT CONNECTED</span>
+      </div>
+      <p class="muted small">
+        Optional — TMDB adds posters, overviews and ratings to every score.
+        Scores work without it. Keys are stored locally via
+        <code>chrome.storage.local</code>, never committed.
+      </p>
+      <form id="tmdb-form" class="manual-form">
+        <input type="password" id="tmdb-key" name="tmdb-key" placeholder="TMDB API key" autocomplete="off" spellcheck="false">
+        <div class="tmdb-actions">
+          <button type="submit" id="tmdb-save-btn" class="analyze-btn secondary">Connect TMDB</button>
+          <button type="button" id="tmdb-clear-btn" class="analyze-btn secondary" hidden>Disconnect</button>
+        </div>
+      </form>
+      <p id="tmdb-status-text" class="muted small" role="status" aria-live="polite"></p>
+    </section>
+
     <section class="welcome">
       <p class="eyebrow">YOUR PROFILE</p>
       <h2 id="user-name">Loading profile...</h2>
-      <p class="muted">Your taste. Your next obsession.</p>
+      <p class="muted" id="user-sub">Your taste. Your next obsession.</p>
     </section>
 
     <section class="section">
-      <h3>🎬 Favourite Movies</h3>
+      <h3>🎬 Favourite Films</h3>
       <div id="favorites" class="chips"></div>
     </section>
 
     <section class="section">
       <div class="section-heading">
-        <h3>Taste DNA</h3>
-        <span class="tag">YOUR TASTE</span>
+        <h3>Your library</h3>
+        <span class="tag">LETTERBOXD</span>
       </div>
       <div id="traits" class="traits"></div>
     </section>
 
     <section class="section">
+      <h3>🔁 Most rewatched</h3>
+      <div id="most-watched" class="chips"></div>
+    </section>
+
+    <section class="section">
+      <h3>🧊 Cold spots</h3>
+      <div id="cold-spots" class="chips"></div>
+    </section>
+
+    <section class="section">
       <div class="section-heading">
         <h3>Picked for You</h3>
-        <span class="muted small">MOCK RESULTS</span>
+        <span id="rec-source-label" class="muted small">YOUR WATCHLIST</span>
       </div>
       <div id="recommendations"></div>
     </section>
 
     <footer>
       <p>Powered by CineGraph Taste Intelligence</p>
-      <p>Demo data · Not connected to the recommendation API</p>
+      <p id="footer-source">Your Letterboxd library · Metadata by TMDB</p>
     </footer>
   </main>
 

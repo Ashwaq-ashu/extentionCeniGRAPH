@@ -1,11 +1,12 @@
 /**
  * Shared scoring client for content scripts and extension pages.
- * Swap `mode` to "api" when the backend URL and auth are confirmed by the team.
+ * Default `mode` is "local": scores on-device against the bundled
+ * Letterboxd library. Swap to "api" when the backend URL is confirmed.
  */
 
 globalThis.CineGraphScoringClient = (() => {
   const DEFAULT_CONFIG = {
-    mode: "dev-mock",
+    mode: "local",
     baseUrl: null,
     profileToken: null,
     region: "IN",
@@ -118,9 +119,9 @@ globalThis.CineGraphScoringClient = (() => {
       return scoreViaApi(normalized);
     }
 
-    const provider = globalThis.CineGraphDevMockProvider;
+    const provider = globalThis.CineGraphLetterboxdProvider;
     if (!provider?.score) {
-      throw new Error("Development mock provider is not loaded.");
+      throw new Error("Letterboxd profile provider is not loaded.");
     }
 
     const response = await provider.score(normalized);
@@ -128,7 +129,9 @@ globalThis.CineGraphScoringClient = (() => {
   }
 
   function isDemoMode() {
-    return getConfig().mode !== "api";
+    // Legacy mock mode only. "local" (Letterboxd) scores are real and
+    // render without the Demo prefix.
+    return getConfig().mode === "dev-mock";
   }
 
   return {

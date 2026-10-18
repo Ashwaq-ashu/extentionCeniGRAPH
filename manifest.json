@@ -12,7 +12,7 @@
     "desktopCapture",
     "tabCapture"
   ],
-  "host_permissions": ["http://*/*", "https://*/*"],
+  "host_permissions": ["http://*/*", "https://*/*", "https://api.themoviedb.org/*", "https://image.tmdb.org/*"],
   "side_panel": {
     "default_path": "sidepanel.html"
   },
@@ -26,8 +26,10 @@
     {
       "resources": [
         "shared/stable-id.js",
-        "scoring/mock-profile.js",
-        "scoring/mock-dev-provider.js",
+        "shared/tmdb-client.js",
+        "shared/letterboxd-data.js",
+        "shared/letterboxd-profile.js",
+        "scoring/letterboxd-provider.js",
         "scoring/scoring-client.js",
         "shared/payload-summary.js",
         "adapters/demo-catalogue.js",
